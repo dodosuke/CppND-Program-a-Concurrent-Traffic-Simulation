@@ -1,10 +1,11 @@
 #include <iostream>
 #include <random>
+#include <future>
+#include <queue>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
 
-/*
 template <typename T>
 T MessageQueue<T>::receive()
 {
@@ -16,10 +17,14 @@ T MessageQueue<T>::receive()
 template <typename T>
 void MessageQueue<T>::send(T &&msg)
 {
-    // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex>
-    // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+    // perform vector modification under the lock
+    std::lock_guard<std::mutex> uLock(_mutex);
+
+    // add vector to queue
+    std::cout << "   Message " << msg << " has been sent to the queue" << std::endl;
+    _messages.push_back(std::move(msg));
+    _cond.notify_one(); // notify client after pushing new Vehicle into vector
 }
-*/
 
 /* Implementation of class "TrafficLight" */
 
@@ -56,11 +61,13 @@ void TrafficLight::cycleThroughPhases()
         auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdated).count();
 
         if (diff > duration) {
-            this->_currentPhase == TrafficLightPhase::red
-                ? this->_currentPhase = TrafficLightPhase::green
-                : this->_currentPhase = TrafficLightPhase::red;\
+            _currentPhase == TrafficLightPhase::red
+                ? _currentPhase = TrafficLightPhase::green
+                : _currentPhase = TrafficLightPhase::red;
 
             lastUpdated = now;
+
+            std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, _queue, std::move(_currentPhase));
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
