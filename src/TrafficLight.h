@@ -50,6 +50,7 @@ private:
     std::mutex _mutex;
     TrafficLightPhase _currentPhase;
     std::shared_ptr<MessageQueue<TrafficLightPhase>> _queue;
+    //MessageQueue<TrafficLightPhase> _queue;
 };
 
 #endif
